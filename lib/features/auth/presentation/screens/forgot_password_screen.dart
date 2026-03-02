@@ -16,8 +16,23 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final TextEditingController _emailController = TextEditingController();
   bool _isLoading = false;
 
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
+  }
+
   Future<void> _handleResetPassword() async {
-    if (!_formKey.currentState!.validate()) return;
+    // Validation de l'email
+    if (_emailController.text.trim().isEmpty) {
+      _showError('Veuillez entrer votre email');
+      return;
+    }
+
+    if (!_isValidEmail(_emailController.text.trim())) {
+      _showError('Email invalide');
+      return;
+    }
 
     setState(() => _isLoading = true);
 
@@ -29,23 +44,40 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       );
 
       if (response.statusCode == 200) {
+        debugPrint('Email de réinitialisation envoyé avec succès');
         if (mounted) {
           _showSuccessDialog();
         }
       } else {
-        final error = jsonDecode(response.body);
-        _showSnackBar(error['message'] ?? 'Erreur lors de l\'envoi');
+        // Erreur API
+        try {
+          final error = jsonDecode(response.body);
+          _showError(error['message'] ?? 'Erreur lors de l\'envoi du lien');
+        } catch (e) {
+          _showError('Erreur lors de l\'envoi (Code: ${response.statusCode})');
+        }
       }
     } catch (e) {
-      _showSnackBar('Erreur de connexion au serveur');
+      debugPrint('Erreur lors de la réinitialisation: $e');
+      _showError('Impossible de contacter le serveur. Vérifiez votre connexion internet.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _showSnackBar(String message) {
+  // Validation de l'email
+  bool _isValidEmail(String email) {
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    return emailRegex.hasMatch(email);
+  }
+
+  void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
+      ),
     );
   }
 
@@ -55,15 +87,27 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Email envoyé'),
-        content: const Text('Un lien de réinitialisation a été envoyé à votre adresse email.'),
+        title: const Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green, size: 28),
+            SizedBox(width: 10),
+            Text('Email envoyé'),
+          ],
+        ),
+        content: const Text(
+          'Un lien de réinitialisation a été envoyé à votre adresse email. Veuillez vérifier votre boîte de réception.',
+          style: TextStyle(fontSize: 15),
+        ),
         actions: [
           TextButton(
             onPressed: () {
               Navigator.pop(context); // Ferme le dialog
               Navigator.pop(context); // Retour au Login
             },
-            child: const Text('OK', style: TextStyle(color: Colors.deepPurple)),
+            child: const Text(
+              'OK',
+              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -75,7 +119,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background haut (img_5 comme le login)
+          // Background haut (img_6)
           Container(
             height: MediaQuery.of(context).size.height * 0.45,
             width: double.infinity,
@@ -93,13 +137,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   left: 20,
                   child: IconButton(
                     icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: _isLoading ? null : () => Navigator.pop(context),
                   ),
                 ),
                 Center(
                   child: Image.asset(
                     'assets/images/logos/logo_1.png',
                     width: 180,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(Icons.image_not_supported, size: 100, color: Colors.white);
+                    },
                   ),
                 ),
               ],
@@ -134,11 +181,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       const Text(
                         'Entrez votre email pour recevoir un lien de réinitialisation.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.black54),
+                        style: TextStyle(color: Colors.black54, fontSize: 15),
                       ),
                       const SizedBox(height: 40),
 
-                      const Text('Email', style: TextStyle(fontWeight: FontWeight.w600)),
+                      const Text(
+                        'Email',
+                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                      ),
                       const SizedBox(height: 10),
                       TextFormField(
                         controller: _emailController,
@@ -146,12 +196,28 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           hintText: 'Entrez votre email',
                           filled: true,
                           fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(15),
                             borderSide: BorderSide.none,
                           ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(15),
+                            borderSide: BorderSide(color: Colors.grey.shade200),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(15),
+                            borderSide: const BorderSide(color: Colors.black, width: 1.5),
+                          ),
+                          errorBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(15),
+                            borderSide: const BorderSide(color: Colors.red),
+                          ),
                         ),
-                        validator: (v) => v!.isEmpty ? 'Veuillez entrer votre email' : null,
+                        keyboardType: TextInputType.emailAddress,
+                        textInputAction: TextInputAction.done,
+                        enabled: !_isLoading,
+                        onFieldSubmitted: (_) => _handleResetPassword(),
                       ),
 
                       const SizedBox(height: 40),
@@ -162,10 +228,48 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           backgroundColor: Colors.black,
                           padding: const EdgeInsets.symmetric(vertical: 18),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                          disabledBackgroundColor: Colors.grey,
                         ),
                         child: _isLoading
-                            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                            : const Text('Envoyer le lien', style: TextStyle(color: Colors.white, fontSize: 16)),
+                            ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                            : const Text(
+                          'Envoyer le lien',
+                          style: TextStyle(color: Colors.white, fontSize: 16),
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Message d'information supplémentaire
+                      Container(
+                        padding: const EdgeInsets.all(15),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.blue.shade100),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline, color: Colors.blue.shade700, size: 22),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Si vous ne recevez pas l\'email, vérifiez vos spams.',
+                                style: TextStyle(
+                                  color: Colors.blue.shade900,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),

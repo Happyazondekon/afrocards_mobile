@@ -35,7 +35,6 @@ class ApiEndpoints {
   // ========================================
   // 🔑 MOT DE PASSE
   // ========================================
-
   /// POST - Demander réinitialisation mot de passe
   static const String forgotPassword = '/password/forgot-password';
 
@@ -88,7 +87,20 @@ class ApiEndpoints {
   static const String partiesHistory = '/parties/history';
 
   // ========================================
-  // 💰 ÉCONOMIE
+  // � RÉSULTATS
+  // ========================================
+
+  /// POST - Sauvegarder les résultats d'un quiz
+  static const String saveResults = '/results/save';
+
+  /// GET - Historique des résultats
+  static const String resultsHistory = '/results/history';
+
+  /// GET - Statistiques du joueur
+  static const String playerStats = '/results/stats';
+
+  // ========================================
+  // �💰 ÉCONOMIE
   // ========================================
 
   /// GET - Obtenir le portefeuille (Coins + Vies)
@@ -164,6 +176,85 @@ class ApiEndpoints {
 
   /// GET - Détails d'un mode de jeu
   static String modeById(int id) => '/modes/$id';
+
+  // ========================================
+  // 🎮 NIVEAUX (MODE STAGE)
+  // ========================================
+
+  /// GET - Liste des niveaux du mode Stage avec progression
+  static const String stagesNiveaux = '/niveaux/stages';
+
+  /// GET - Niveaux par mode de jeu
+  static String niveauxByMode(int idMode) => '/niveaux/mode/$idMode';
+
+  /// GET - Détails d'un niveau
+  static String niveauById(int id) => '/niveaux/$id';
+
+  /// PUT - Mettre à jour la progression d'un niveau
+  static String updateNiveauProgression(int idNiveau) =>
+      '/niveaux/$idNiveau/progression';
+
+  // ========================================
+  // 🎉 MODE FIESTA
+  // ========================================
+
+  /// GET - Liste des sous-modes Fiesta (Challenges, Aléatoire, Défier des amis)
+  static const String fiestaSousModes = '/sous-modes/fiesta';
+
+  /// GET - Détails d'un sous-mode
+  static String sousModeById(int id) => '/sous-modes/$id';
+
+  /// GET - Liste des challenges disponibles
+  static const String challenges = '/fiesta/challenges';
+
+  /// GET - Détails d'un challenge
+  static String challengeById(int id) => '/fiesta/challenges/$id';
+
+  /// POST - Participer à un challenge
+  static String joinChallenge(int id) => '/fiesta/challenges/$id/join';
+
+  /// GET - Quiz aléatoire
+  static const String randomQuiz = '/fiesta/random';
+
+  /// POST - Démarrer un quiz aléatoire
+  static const String startRandomQuiz = '/fiesta/random/start';
+
+  /// GET - Liste des amis pour défier
+  static const String friendsToChallenge = '/fiesta/friends';
+
+  /// POST - Envoyer un défi à un ami
+  static String challengeFriend(int friendId) => '/fiesta/friends/$friendId/challenge';
+
+  /// GET - Défis reçus / en attente
+  static const String pendingChallenges = '/fiesta/challenges/pending';
+
+  // ========================================
+  // ❓ QUESTIONS
+  // ========================================
+
+  /// GET - Questions aléatoires
+  static const String randomQuestions = '/questions/random';
+
+  /// GET - Questions par catégorie
+  static String questionsByCategory(int idCategorie) =>
+      '/questions/category/$idCategorie';
+
+  /// GET - Questions pour un niveau (mode Stage)
+  static String questionsForLevel(int levelNumber) =>
+      '/questions/level/$levelNumber';
+
+  /// GET - Une question par son ID
+  static String questionById(int idQuestion) => '/questions/$idQuestion';
+
+  /// GET - Explication d'une question
+  static String questionExplication(int idQuestion) =>
+      '/questions/$idQuestion/explication';
+
+  /// POST - Vérifier une réponse
+  static String verifyAnswer(int idQuestion) => '/questions/$idQuestion/verify';
+
+  /// GET - Statistiques des questions
+  static const String questionsStats = '/questions/stats';
 
   // ========================================
   // 📤 UPLOAD

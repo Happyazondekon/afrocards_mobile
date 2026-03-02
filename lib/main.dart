@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
- import 'features/auth/presentation/screens/splash_screen.dart';
+import 'core/providers/user_state_provider.dart';
+import 'features/auth/presentation/screens/splash_screen.dart';
 
 /// 🚀 MAIN.DART - AFROCARDS
 /// Point d'entrée de l'application
@@ -33,14 +35,15 @@ class AfroCardsApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'AFROCARDS',
-      debugShowCheckedModeBanner: false,
+    return ChangeNotifierProvider(
+      create: (_) => UserStateProvider(),
+      child: MaterialApp(
+        title: 'AFROCARDS',
+        debugShowCheckedModeBanner: false,
 
-
-      // 🏠 Route de démarrage
-      // TODO: Remplacer par SplashScreen() une fois importé
-      home: const SplashScreen(),
+        // 🏠 Route de démarrage
+        home: const SplashScreen(),
+      ),
     );
   }
 }

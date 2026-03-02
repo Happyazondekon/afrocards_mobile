@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'dart:async';
 
+import '../../../../core/providers/user_state_provider.dart';
+import '../../../../core/services/session_service.dart';
+import '../../../home/presentation/screens/home_screen.dart';
+import '../../../home/presentation/screens/category_selection_screen.dart';
 import 'onboarding_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -30,23 +35,87 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     _controller.forward();
-    _navigateToOnboarding();
+    _checkSessionAndNavigate();
   }
 
-  void _navigateToOnboarding() {
-    Timer(const Duration(seconds: 3), () {
+  /// Vérifie la session et navigue vers l'écran approprié
+  Future<void> _checkSessionAndNavigate() async {
+    // Attendre un minimum de 2 secondes pour l'animation du splash
+    await Future.delayed(const Duration(seconds: 2));
+
+    // Initialiser le service de session
+    final session = SessionService.instance;
+    await session.init();
+
+    if (!mounted) return;
+
+    // Vérifier si l'utilisateur est connecté
+    if (session.isLoggedIn) {
+      debugPrint('✅ Utilisateur connecté: ${session.userName}');
+      
+      // 🔄 Initialiser le UserStateProvider avec les données de session
       if (mounted) {
-        // TODO: Décommenter quand OnboardingScreen sera importé
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const OnboardingScreen(),
+        final userState = context.read<UserStateProvider>();
+        await userState.initialize(
+          token: session.token ?? '',
+          userName: session.userName,
+          avatarUrl: session.avatarUrl,
+        );
+      }
+      
+      // Vérifier si des catégories sont sélectionnées
+      final hasCategories = await session.hasSelectedCategories();
+      
+      if (hasCategories) {
+        // Aller directement au Home
+        final selectedCategories = await session.getSelectedCategories();
+        _navigateTo(
+          HomeScreen(
+            userName: session.userName,
+            userLevel: session.userLevel,
+            userPoints: session.userPoints,
+            userLives: session.userLives,
+            avatarUrl: session.avatarUrl,
+            token: session.token,
+            selectedCategoryIds: selectedCategories,
           ),
         );
-
-        debugPrint('✅ Navigation vers l\'écran d\'onboarding');
+      } else {
+        // Aller à la sélection des catégories
+        _navigateTo(
+          CategorySelectionScreen(
+            userName: session.userName,
+            userLevel: session.userLevel,
+            userPoints: session.userPoints,
+            userLives: session.userLives,
+            avatarUrl: session.avatarUrl,
+            token: session.token,
+          ),
+        );
       }
-    });
+    } else {
+      // Vérifier si l'onboarding a été fait
+      final onboardingDone = await session.isOnboardingCompleted();
+      
+      if (onboardingDone) {
+        // Aller directement au login (importer LoginScreen si nécessaire)
+        _navigateTo(const OnboardingScreen()); // TODO: Remplacer par LoginScreen
+      } else {
+        // Aller à l'onboarding
+        _navigateTo(const OnboardingScreen());
+      }
+      
+      debugPrint('👤 Utilisateur non connecté - Navigation vers onboarding/login');
+    }
+  }
+
+  void _navigateTo(Widget screen) {
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => screen),
+      );
+    }
   }
 
   @override

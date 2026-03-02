@@ -1,10 +1,15 @@
 import 'package:afrocards_mobile/features/auth/presentation/screens/register_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'dart:convert';
 
 import '../../../../core/constants/api_endpoints.dart';
+import '../../../../core/providers/user_state_provider.dart';
+import '../../../../core/services/session_service.dart';
+import '../../../home/presentation/screens/category_selection_screen.dart';
 import 'forgot_password_screen.dart';
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -53,7 +58,7 @@ class _LoginScreenState extends State<LoginScreen> {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': _emailController.text.trim(),
-          'motDePasse': _passwordController.text, // Notez: l'API utilise 'motDePasse' pas 'password'
+          'motDePasse': _passwordController.text,
         }),
       );
 
@@ -63,24 +68,49 @@ class _LoginScreenState extends State<LoginScreen> {
 
         debugPrint('Connexion réussie: ${response.body}');
 
-        // TODO: Sauvegarder le token et les données utilisateur
-        // final token = data['data']['token'];
-        // final utilisateur = data['data']['utilisateur'];
-        // final profil = data['data']['profil'];
+        // Extraire les données utilisateur
+        final token = data['data']?['token'];
+        final utilisateur = data['data']?['utilisateur'];
+        final profil = data['data']?['profil'];
+
+        // 🔐 Sauvegarder la session (token + données utilisateur)
+        await SessionService.instance.saveSession(
+          token: token ?? '',
+          utilisateur: utilisateur ?? {},
+          profil: profil,
+        );
 
         if (mounted) {
+          // 🔄 Initialiser le UserStateProvider avec les données utilisateur
+          final userState = context.read<UserStateProvider>();
+          await userState.initialize(
+            token: token ?? '',
+            userName: utilisateur?['nom'] ?? profil?['pseudo'] ?? 'Joueur',
+            avatarUrl: profil?['avatarURL'],
+          );
+          
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Connexion réussie !'),
               backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
             ),
           );
 
-          // TODO: Naviguer vers l'écran d'accueil
-          // Navigator.pushReplacement(
-          //   context,
-          //   MaterialPageRoute(builder: (context) => const HomeScreen()),
-          // );
+          // Naviguer vers l'écran de sélection des catégories
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => CategorySelectionScreen(
+                userName: utilisateur?['nom'] ?? profil?['pseudo'] ?? 'Joueur',
+                userLevel: userState.userLevel,
+                userPoints: userState.coins,
+                userLives: userState.lives,
+                avatarUrl: profil?['avatarURL'],
+                token: token,
+              ),
+            ),
+          );
         }
       } else {
         // Erreur API
