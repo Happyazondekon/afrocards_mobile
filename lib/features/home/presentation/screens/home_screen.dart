@@ -443,52 +443,88 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildGameModeCard(dynamic mode) {
+    final modeName = (mode['nom'] ?? '').toString().toLowerCase();
+    
+    // Définir l'icône et les couleurs selon le mode
+    IconData modeIcon;
+    List<Color> gradientColors;
+    Color iconBgColor;
+    
+    if (modeName == 'stages' || modeName == 'stage') {
+      modeIcon = Icons.stairs_rounded;
+      gradientColors = [const Color(0xFFFFD700), const Color(0xFFFFA500)];
+      iconBgColor = const Color(0xFFFFF3CD);
+    } else if (modeName == 'fiesta') {
+      modeIcon = Icons.celebration_rounded;
+      gradientColors = [const Color(0xFFE91E63), const Color(0xFF9C27B0)];
+      iconBgColor = const Color(0xFFFCE4EC);
+    } else {
+      modeIcon = Icons.gamepad_rounded;
+      gradientColors = [const Color(0xFF6B4EAA), const Color(0xFF9C27B0)];
+      iconBgColor = const Color(0xFFF3E5F5);
+    }
+
     return GestureDetector(
       onTap: () => _onGameModeSelected(mode),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFFF5F5FF),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey.shade200),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: gradientColors[0].withOpacity(0.15),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
         child: Column(
           children: [
-            // Info button
+            // Info button en haut à droite
             Align(
-              alignment: Alignment.topLeft,
+              alignment: Alignment.topRight,
               child: GestureDetector(
                 onTap: () => _showModeInfo(mode),
                 child: Container(
-                  padding: const EdgeInsets.all(4),
+                  padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Colors.grey.shade100,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.grey.shade300),
                   ),
-                  child: const Icon(Icons.info_outline, size: 14, color: Colors.grey),
+                  child: Icon(Icons.info_outline, size: 14, color: Colors.grey.shade500),
                 ),
               ),
             ),
-            const SizedBox(height: 8),
-            // Icône du mode
+            const SizedBox(height: 4),
+            // Icône avec gradient
             Container(
-              width: 70,
-              height: 70,
+              width: 80,
+              height: 80,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                gradient: LinearGradient(
+                  colors: gradientColors,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
                 shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: gradientColors[0].withOpacity(0.4),
+                    blurRadius: 15,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
               ),
-              child: const Center(
-                child: Icon(Icons.gamepad_outlined, size: 35, color: Colors.grey),
-              ),
+              child: Icon(modeIcon, size: 40, color: Colors.white),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Text(
               mode['nom'] ?? 'Mode',
               style: const TextStyle(
-                fontSize: 15,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
+                color: Colors.black87,
               ),
             ),
           ],
@@ -543,57 +579,92 @@ class _HomeScreenState extends State<HomeScreen> {
     String? subtitle,
     required VoidCallback onTap,
   }) {
+    // Définir les couleurs de gradient selon le titre
+    List<Color> gradientColors;
+    if (title.toLowerCase().contains('classement')) {
+      gradientColors = [const Color(0xFFFF9800), const Color(0xFFFF5722)];
+    } else {
+      gradientColors = [const Color(0xFF7C4DFF), const Color(0xFF651FFF)];
+    }
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFFF5F5FF),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey.shade200),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: gradientColors[0].withOpacity(0.15),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
         child: Column(
           children: [
-            // Info button
+            // Info button en haut à droite
             Align(
-              alignment: Alignment.topLeft,
+              alignment: Alignment.topRight,
               child: Container(
-                padding: const EdgeInsets.all(4),
+                padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Colors.grey.shade100,
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.grey.shade300),
                 ),
-                child: const Icon(Icons.info_outline, size: 14, color: Colors.grey),
+                child: Icon(Icons.info_outline, size: 14, color: Colors.grey.shade500),
               ),
             ),
-            const SizedBox(height: 8),
-            // Icône
+            const SizedBox(height: 4),
+            // Icône avec gradient
             Container(
-              width: 60,
-              height: 60,
+              width: 70,
+              height: 70,
               decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.15),
+                gradient: LinearGradient(
+                  colors: gradientColors,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
                 shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: gradientColors[0].withOpacity(0.4),
+                    blurRadius: 15,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
               ),
-              child: Icon(icon, size: 35, color: iconColor),
+              child: Icon(icon, size: 35, color: Colors.white),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Text(
               title,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
+                color: Colors.black87,
               ),
             ),
             if (subtitle != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey.shade600,
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [gradientColors[0].withOpacity(0.1), gradientColors[1].withOpacity(0.1)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: gradientColors[0],
+                  ),
                 ),
               ),
             ],

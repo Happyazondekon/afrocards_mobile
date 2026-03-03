@@ -346,85 +346,107 @@ class _FiestaModeScreenState extends State<FiestaModeScreen> {
 
   Widget _buildSubModeCard(FiestaSubMode subMode) {
     final isSelected = _selectedSubMode?.idSousMode == subMode.idSousMode;
+    final subModeName = subMode.nom.toLowerCase();
+    
+    // Définir l'icône et les couleurs selon le sous-mode
+    IconData modeIcon;
+    List<Color> gradientColors;
+    
+    if (subModeName.contains('challenge')) {
+      modeIcon = Icons.emoji_events_rounded;
+      gradientColors = [const Color(0xFFFF9800), const Color(0xFFFF5722)];
+    } else if (subModeName.contains('aleatoire') || subModeName.contains('aléatoire')) {
+      modeIcon = Icons.casino_rounded;
+      gradientColors = [const Color(0xFF00BCD4), const Color(0xFF0097A7)];
+    } else if (subModeName.contains('defier') || subModeName.contains('amis')) {
+      modeIcon = Icons.people_alt_rounded;
+      gradientColors = [const Color(0xFFE91E63), const Color(0xFF9C27B0)];
+    } else {
+      modeIcon = Icons.star_rounded;
+      gradientColors = [const Color(0xFF6B4EAA), const Color(0xFF9C27B0)];
+    }
 
     return GestureDetector(
       onTap: () => _onSubModeSelected(subMode),
-      child: Stack(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: isSelected
+              ? Border.all(color: gradientColors[0], width: 2.5)
+              : null,
+          boxShadow: [
+            BoxShadow(
               color: isSelected
-                  ? const Color(0xFFF5F0FF)
-                  : const Color(0xFFFAFAFA),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isSelected
-                    ? const Color(0xFF6B4EAA)
-                    : Colors.grey.shade200,
-                width: isSelected ? 2 : 1,
+                  ? gradientColors[0].withOpacity(0.3)
+                  : Colors.black.withOpacity(0.08),
+              blurRadius: isSelected ? 20 : 15,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Icône avec gradient
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: isSelected ? 85 : 75,
+              height: isSelected ? 85 : 75,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: gradientColors,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: gradientColors[0].withOpacity(0.4),
+                    blurRadius: 15,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
               ),
-              boxShadow: isSelected
-                  ? [
-                      BoxShadow(
-                        color: const Color(0xFF6B4EAA).withOpacity(0.2),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ]
+              child: Icon(
+                modeIcon,
+                size: isSelected ? 40 : 35,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Nom du mode
+            Text(
+              subMode.nom,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: isSelected ? gradientColors[0] : Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Indicateur de sélection
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isSelected ? gradientColors[0] : Colors.grey.shade200,
+                border: Border.all(
+                  color: isSelected ? gradientColors[0] : Colors.grey.shade300,
+                  width: 2,
+                ),
+              ),
+              child: isSelected
+                  ? const Icon(Icons.check, size: 16, color: Colors.white)
                   : null,
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(height: 10),
-                // Icône placeholder (cercle gris comme la maquette)
-                Container(
-                  width: 70,
-                  height: 70,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  subMode.nom,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: isSelected
-                        ? const Color(0xFF6B4EAA)
-                        : Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 10),
-              ],
-            ),
-          ),
-          // Bouton info en bas à droite
-          Positioned(
-            right: 10,
-            bottom: 10,
-            child: GestureDetector(
-              onTap: () => _showSubModeInfo(subMode),
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
-                child: Icon(
-                  Icons.info_outline,
-                  size: 14,
-                  color: Colors.grey.shade500,
-                ),
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
