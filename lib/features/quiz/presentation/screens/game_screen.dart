@@ -8,6 +8,7 @@ import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/providers/user_state_provider.dart';
 import '../../../../shared/widgets/app_header.dart';
 import '../../../challenge/presentation/screens/challenge_result_screen.dart';
+import '../../../challenge/presentation/screens/friend_challenge_result_screen.dart';
 import 'result_screen.dart';
 
 /// Modèle pour une réponse
@@ -547,6 +548,32 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             playerScore: _score,
             opponentScore: opponentScore,
             opponentName: widget.opponentName ?? 'Adversaire',
+            totalQuestions: _questions.length,
+            xpGained: _totalPoints,
+            coinsGained: _score * 5,
+            isWinner: isWinner,
+          ),
+        ),
+      );
+      return;
+    }
+
+    // Mode défi ami : naviguer vers FriendChallengeResultScreen
+    if (widget.mode == 'friend_challenge') {
+      final opponentScore = _generateOpponentScore();
+      final isWinner = _score > opponentScore;
+      final userState = context.read<UserStateProvider>();
+      
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => FriendChallengeResultScreen(
+            userName: widget.userName,
+            token: widget.token,
+            playerScore: _score,
+            opponentScore: opponentScore,
+            opponentName: widget.opponentName ?? 'Ami',
+            playerAvatarUrl: userState.avatarUrl,
             totalQuestions: _questions.length,
             xpGained: _totalPoints,
             coinsGained: _score * 5,

@@ -188,23 +188,23 @@ class _ChallengeMatchingScreenState extends State<ChallengeMatchingScreen>
               children: [
                 // Logo en haut
                 Padding(
-              padding: const EdgeInsets.only(top: 20),
-              child: Image.asset(
-                'assets/images/logos/logo_afc.png',
-                height: 50,
-                errorBuilder: (context, error, stackTrace) {
-                  return const Text(
-                    'AFROCARDS',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF6B4EAA),
-                    ),
-                  );
-                },
-              ),
-            ),
-            
+                  padding: const EdgeInsets.only(top: 20),
+                  child: Image.asset(
+                    'assets/images/logos/logo_afc.png',
+                    height: 50,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Text(
+                        'AFROCARDS',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF6B4EAA),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
                 Expanded(
                   child: _isSearching ? _buildSearchingView() : _buildMatchedView(),
                 ),

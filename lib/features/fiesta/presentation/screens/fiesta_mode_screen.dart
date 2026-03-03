@@ -7,6 +7,7 @@ import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/providers/user_state_provider.dart';
 import '../../../../shared/widgets/app_header.dart';
 import '../../../challenge/presentation/screens/challenge_question_count_screen.dart';
+import '../../../challenge/presentation/screens/friend_selection_screen.dart';
 import '../../../quiz/presentation/screens/game_screen.dart';
 
 /// Modèle pour un sous-mode Fiesta
@@ -203,11 +204,11 @@ class _FiestaModeScreenState extends State<FiestaModeScreen> {
         ),
       );
     } else if (subModeName.contains('defier') || subModeName.contains('amis')) {
-      // Mode Défier des amis - naviguer vers Challenge
+      // Mode Défier des amis - naviguer vers sélection d'ami
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => ChallengeQuestionCountScreen(
+          builder: (context) => FriendSelectionScreen(
             token: widget.token,
           ),
         ),
