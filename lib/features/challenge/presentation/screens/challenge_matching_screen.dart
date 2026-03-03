@@ -3,12 +3,10 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:provider/provider.dart';
 
 import '../../../../core/constants/api_endpoints.dart';
-import '../../../../core/providers/user_state_provider.dart';
 import '../../../../shared/widgets/bottom_nav_bar.dart';
-import '../../../quiz/presentation/screens/game_screen.dart';
+import 'challenge_matched_screen.dart';
 
 /// Modèle pour un adversaire de challenge
 class ChallengeOpponent {
@@ -56,9 +54,6 @@ class ChallengeMatchingScreen extends StatefulWidget {
 
 class _ChallengeMatchingScreenState extends State<ChallengeMatchingScreen>
     with SingleTickerProviderStateMixin {
-  bool _isSearching = true;
-  ChallengeOpponent? _opponent;
-  String? _challengeId;
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
@@ -102,11 +97,9 @@ class _ChallengeMatchingScreenState extends State<ChallengeMatchingScreen>
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['success'] == true && data['data'] != null) {
-          setState(() {
-            _opponent = ChallengeOpponent.fromJson(data['data']['opponent']);
-            _challengeId = data['data']['challengeId']?.toString();
-            _isSearching = false;
-          });
+          final opponent = ChallengeOpponent.fromJson(data['data']['opponent']);
+          final challengeId = data['data']['challengeId']?.toString();
+          _navigateToMatchedScreen(opponent, challengeId);
           return;
         }
       }
@@ -115,11 +108,24 @@ class _ChallengeMatchingScreenState extends State<ChallengeMatchingScreen>
     }
 
     // Fallback: générer un adversaire fictif
-    setState(() {
-      _opponent = _generateRandomOpponent();
-      _challengeId = 'challenge_${DateTime.now().millisecondsSinceEpoch}';
-      _isSearching = false;
-    });
+    final opponent = _generateRandomOpponent();
+    final challengeId = 'challenge_${DateTime.now().millisecondsSinceEpoch}';
+    _navigateToMatchedScreen(opponent, challengeId);
+  }
+
+  void _navigateToMatchedScreen(ChallengeOpponent opponent, String? challengeId) {
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChallengeMatchedScreen(
+          opponent: opponent,
+          challengeId: challengeId,
+          questionCount: widget.questionCount,
+          token: widget.token,
+        ),
+      ),
+    );
   }
 
   ChallengeOpponent _generateRandomOpponent() {
@@ -136,37 +142,6 @@ class _ChallengeMatchingScreenState extends State<ChallengeMatchingScreen>
       xp: xp,
       avatarUrl: null,
     );
-  }
-
-  void _startChallenge() {
-    final userState = context.read<UserStateProvider>();
-    
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => GameScreen(
-          userName: userState.userName,
-          userLevel: userState.userLevel,
-          userLives: userState.lives,
-          userCoins: userState.coins,
-          avatarUrl: userState.avatarUrl,
-          token: widget.token,
-          mode: 'challenge',
-          nombreQuestions: widget.questionCount,
-          challengeId: _challengeId,
-          opponentName: _opponent?.nom,
-          opponentId: _opponent?.id,
-        ),
-      ),
-    );
-  }
-
-  void _findAnotherPartner() {
-    setState(() {
-      _isSearching = true;
-      _opponent = null;
-    });
-    _findOpponent();
   }
 
   @override
@@ -206,7 +181,7 @@ class _ChallengeMatchingScreenState extends State<ChallengeMatchingScreen>
                 ),
 
                 Expanded(
-                  child: _isSearching ? _buildSearchingView() : _buildMatchedView(),
+                  child: _buildSearchingView(),
                 ),
               ],
             ),
@@ -268,124 +243,6 @@ class _ChallengeMatchingScreenState extends State<ChallengeMatchingScreen>
           const SizedBox(height: 16),
           const CircularProgressIndicator(
             valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6B4EAA)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMatchedView() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Avatar de l'adversaire
-          Container(
-            width: 150,
-            height: 150,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.grey[200],
-              border: Border.all(
-                color: Colors.grey[300]!,
-                width: 4,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 20,
-                  spreadRadius: 5,
-                ),
-              ],
-              image: _opponent?.avatarUrl != null
-                  ? DecorationImage(
-                      image: NetworkImage(_opponent!.avatarUrl!),
-                      fit: BoxFit.cover,
-                    )
-                  : null,
-            ),
-            child: _opponent?.avatarUrl == null
-                ? const Icon(Icons.person, size: 70, color: Colors.grey)
-                : null,
-          ),
-          const SizedBox(height: 24),
-
-          // Nom de l'adversaire
-          Text(
-            _opponent?.nom ?? 'Adversaire',
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // Niveau et XP
-          Text(
-            '${_opponent?.niveau ?? 'Stage 1'}-${_opponent?.xp ?? 0}XP',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
-            ),
-          ),
-
-          // Ligne de séparation
-          Container(
-            margin: const EdgeInsets.symmetric(vertical: 24),
-            width: 60,
-            height: 2,
-            color: Colors.grey[300],
-          ),
-
-          // Message de match
-          Text(
-            'Super! Notre algorithme got you\npaired with ${_opponent?.nom ?? 'un adversaire'}',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 16,
-              color: Colors.black87,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 32),
-
-          // Bouton Continuer
-          SizedBox(
-            width: 180,
-            child: ElevatedButton(
-              onPressed: _startChallenge,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE8E4A8),
-                foregroundColor: Colors.black87,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25),
-                ),
-                elevation: 0,
-              ),
-              child: const Text(
-                'Continuer',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Lien trouver un autre partenaire
-          TextButton(
-            onPressed: _findAnotherPartner,
-            child: Text(
-              'Me trouver un autre partenaire',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
-            ),
           ),
         ],
       ),
