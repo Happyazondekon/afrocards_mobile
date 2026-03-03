@@ -116,8 +116,14 @@ class ApiEndpoints {
   // 🏆 CLASSEMENT
   // ========================================
 
-  /// GET - Classement global
+  /// GET - Classement global (Monde)
   static const String classementGlobal = '/classement/global';
+
+  /// GET - Classement mensuel
+  static const String classementMensuel = '/classement/mensuel';
+
+  /// GET - Classement des amis
+  static const String classementAmis = '/classement/amis';
 
   /// GET - Classement par pays
   static String classementPays(String pays) => '/classement/pays/$pays';
