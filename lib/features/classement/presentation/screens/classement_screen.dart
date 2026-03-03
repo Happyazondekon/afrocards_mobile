@@ -1,14 +1,17 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 
 import '../../../../core/constants/api_endpoints.dart';
+import '../../../../core/providers/user_state_provider.dart';
 import '../../../../shared/widgets/app_header.dart';
 import '../../../../shared/widgets/bottom_nav_bar.dart';
 
 /// Modèle pour un joueur dans le classement
 class ClassementPlayer {
   final int rank;
+  final int? idJoueur;
   final String nom;
   final String? avatar;
   final int xp;
@@ -18,6 +21,7 @@ class ClassementPlayer {
 
   ClassementPlayer({
     required this.rank,
+    this.idJoueur,
     required this.nom,
     this.avatar,
     required this.xp,
@@ -29,17 +33,14 @@ class ClassementPlayer {
   factory ClassementPlayer.fromJson(Map<String, dynamic> json,
       {bool isCurrentUser = false}) {
     return ClassementPlayer(
-      rank: json['rank'] ?? json['position'] ?? json['rang'] ?? 0,
-      nom: json['nom'] ?? json['pseudo'] ?? 'Joueur',
-      avatar: json['avatar'] ?? json['avatarUrl'] ?? json['avatarURL'],
-      xp: json['xp'] ??
-          json['xpTotal'] ??
-          json['points'] ??
-          json['score'] ??
-          0,
+      rank: json['rang'] ?? json['rank'] ?? json['position'] ?? 0,
+      idJoueur: json['idJoueur'],
+      nom: json['pseudo'] ?? json['nom'] ?? 'Joueur',
+      avatar: json['avatarURL'] ?? json['avatar'] ?? json['avatarUrl'],
+      xp: json['xpTotal'] ?? json['xp'] ?? json['points'] ?? json['score'] ?? 0,
       niveau: json['niveau'] ?? json['stage'] ?? 'Stage 1',
       badge: json['badge'] ?? json['titre'],
-      isCurrentUser: isCurrentUser,
+      isCurrentUser: json['isCurrentUser'] == true || isCurrentUser,
     );
   }
 }
@@ -74,6 +75,9 @@ class _ClassementScreenState extends State<ClassementScreen> {
   List<ClassementPlayer> _mensuelPlayers = [];
   List<ClassementPlayer> _amisPlayers = [];
 
+  ClassementPlayer? _currentUserMonde;
+  ClassementPlayer? _currentUserMensuel;
+
   bool _isLoading = true;
   String? _error;
 
@@ -93,16 +97,13 @@ class _ClassementScreenState extends State<ClassementScreen> {
 
     try {
       // Charger tous les classements en parallèle
-      final results = await Future.wait([
-        _fetchClassement(ApiEndpoints.classementGlobal),
-        _fetchClassement(ApiEndpoints.classementMensuel),
-        _fetchClassement(ApiEndpoints.classementAmis),
+      await Future.wait([
+        _fetchClassement(ApiEndpoints.classementGlobal, 0),
+        _fetchClassement(ApiEndpoints.classementMensuel, 1),
+        _fetchClassement(ApiEndpoints.classementAmis, 2),
       ]);
 
       setState(() {
-        _mondePlayers = results[0];
-        _mensuelPlayers = results[1];
-        _amisPlayers = results[2];
         _isLoading = false;
       });
     } catch (e) {
@@ -118,7 +119,7 @@ class _ClassementScreenState extends State<ClassementScreen> {
     }
   }
 
-  Future<List<ClassementPlayer>> _fetchClassement(String endpoint) async {
+  Future<void> _fetchClassement(String endpoint, int tabIndex) async {
     try {
       final response = await http.get(
         Uri.parse(ApiEndpoints.buildUrl(endpoint)),
@@ -131,15 +132,54 @@ class _ClassementScreenState extends State<ClassementScreen> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final playersList = data['data'] as List? ?? [];
-        return playersList.map((p) => ClassementPlayer.fromJson(p)).toList();
+        final players =
+            playersList.map((p) => ClassementPlayer.fromJson(p)).toList();
+
+        // Récupérer l'utilisateur courant s'il n'est pas dans la liste
+        ClassementPlayer? currentUser;
+        if (data['currentUser'] != null) {
+          currentUser =
+              ClassementPlayer.fromJson(data['currentUser'], isCurrentUser: true);
+        }
+
+        setState(() {
+          switch (tabIndex) {
+            case 0:
+              _mondePlayers = players;
+              _currentUserMonde = currentUser;
+              break;
+            case 1:
+              _mensuelPlayers = players;
+              _currentUserMensuel = currentUser;
+              break;
+            case 2:
+              _amisPlayers = players;
+              break;
+          }
+        });
       }
     } catch (e) {
       debugPrint('Erreur fetch $endpoint: $e');
+      // Utiliser les données de test en cas d'erreur
+      final testPlayers = _generateTestPlayers();
+      setState(() {
+        switch (tabIndex) {
+          case 0:
+            _mondePlayers = testPlayers;
+            break;
+          case 1:
+            _mensuelPlayers = testPlayers;
+            break;
+          case 2:
+            _amisPlayers = testPlayers;
+            break;
+        }
+      });
     }
-    return _generateTestPlayers();
   }
 
   List<ClassementPlayer> _generateTestPlayers() {
+    final userState = context.read<UserStateProvider>();
     final testData = [
       {
         'nom': 'Tunde Gabriel',
@@ -166,6 +206,14 @@ class _ClassementScreenState extends State<ClassementScreen> {
         'xp': 98
       },
       {
+        'nom': userState.userName,
+        'niveau': userState.userLevel,
+        'badge': 'Emeraude',
+        'xp': 98,
+        'avatar': userState.avatarUrl,
+        'isCurrentUser': true
+      },
+      {
         'nom': 'Tunde Gabriel',
         'niveau': 'Stage 5',
         'badge': 'Emeraude',
@@ -184,8 +232,10 @@ class _ClassementScreenState extends State<ClassementScreen> {
         rank: entry.key + 1,
         nom: entry.value['nom'] as String,
         niveau: entry.value['niveau'] as String,
-        badge: entry.value['badge'] as String,
+        badge: entry.value['badge'] as String?,
         xp: entry.value['xp'] as int,
+        avatar: entry.value['avatar'] as String?,
+        isCurrentUser: entry.value['isCurrentUser'] == true,
       );
     }).toList();
   }
@@ -200,6 +250,17 @@ class _ClassementScreenState extends State<ClassementScreen> {
         return _amisPlayers;
       default:
         return _mondePlayers;
+    }
+  }
+
+  ClassementPlayer? get _currentUserNotInList {
+    switch (_selectedTabIndex) {
+      case 0:
+        return _currentUserMonde;
+      case 1:
+        return _currentUserMensuel;
+      default:
+        return null;
     }
   }
 
@@ -244,7 +305,7 @@ class _ClassementScreenState extends State<ClassementScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 24), // Pour équilibrer la flèche
+                    const SizedBox(width: 24),
                   ],
                 ),
               ),
@@ -325,8 +386,9 @@ class _ClassementScreenState extends State<ClassementScreen> {
 
   Widget _buildPlayersList() {
     final players = _currentPlayers;
+    final currentUserNotInList = _currentUserNotInList;
 
-    if (players.isEmpty) {
+    if (players.isEmpty && currentUserNotInList == null) {
       return const Center(
         child: Text(
           'Aucun joueur dans le classement',
@@ -335,14 +397,52 @@ class _ClassementScreenState extends State<ClassementScreen> {
       );
     }
 
+    // Nombre total d'éléments (joueurs + éventuellement l'utilisateur + séparateur)
+    final hasCurrentUserSeparate = currentUserNotInList != null;
+    final itemCount =
+        players.length + (hasCurrentUserSeparate ? 2 : 0); // +2 pour séparateur + user
+
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      itemCount: players.length,
-      separatorBuilder: (context, index) => Divider(
-        color: Colors.grey.shade200,
-        height: 1,
-      ),
+      itemCount: itemCount,
+      separatorBuilder: (context, index) {
+        // Si c'est le séparateur avant l'utilisateur courant
+        if (hasCurrentUserSeparate && index == players.length) {
+          return const SizedBox(height: 8);
+        }
+        return Divider(
+          color: Colors.grey.shade200,
+          height: 1,
+        );
+      },
       itemBuilder: (context, index) {
+        // Si c'est le séparateur "Votre position"
+        if (hasCurrentUserSeparate && index == players.length) {
+          return Container(
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5F0FF),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Center(
+              child: Text(
+                'Votre position',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF6B4EAA),
+                ),
+              ),
+            ),
+          );
+        }
+
+        // Si c'est l'utilisateur courant (affiché à la fin)
+        if (hasCurrentUserSeparate && index == players.length + 1) {
+          return _buildPlayerTile(currentUserNotInList);
+        }
+
         final player = players[index];
         return _buildPlayerTile(player);
       },
@@ -358,56 +458,73 @@ class _ClassementScreenState extends State<ClassementScreen> {
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Row(
-        children: [
-          // Avatar
-          CircleAvatar(
-            radius: 26,
-            backgroundColor: Colors.grey[200],
-            backgroundImage: player.avatar != null && player.avatar!.isNotEmpty
-                ? NetworkImage(player.avatar!)
-                : null,
-            child: player.avatar == null || player.avatar!.isEmpty
-                ? Icon(Icons.person, color: Colors.grey[400], size: 28)
-                : null,
-          ),
-          const SizedBox(width: 14),
-
-          // Nom et niveau
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  player.nom,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  levelDisplay,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ],
+      decoration: player.isCurrentUser
+          ? BoxDecoration(
+              color: const Color(0xFFF5F0FF),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF6B4EAA), width: 1.5),
+            )
+          : null,
+      child: Padding(
+        padding: player.isCurrentUser
+            ? const EdgeInsets.symmetric(horizontal: 12)
+            : EdgeInsets.zero,
+        child: Row(
+          children: [
+            // Avatar
+            CircleAvatar(
+              radius: 26,
+              backgroundColor: Colors.grey[200],
+              backgroundImage:
+                  player.avatar != null && player.avatar!.isNotEmpty
+                      ? NetworkImage(player.avatar!)
+                      : null,
+              child: player.avatar == null || player.avatar!.isEmpty
+                  ? Icon(Icons.person, color: Colors.grey[400], size: 28)
+                  : null,
             ),
-          ),
+            const SizedBox(width: 14),
 
-          // XP
-          Text(
-            '${player.xp}XP',
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
+            // Nom et niveau
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    player.nom,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: player.isCurrentUser
+                          ? const Color(0xFF6B4EAA)
+                          : Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    levelDisplay,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+
+            // XP
+            Text(
+              '${player.xp}XP',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: player.isCurrentUser
+                    ? const Color(0xFF6B4EAA)
+                    : Colors.black87,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
