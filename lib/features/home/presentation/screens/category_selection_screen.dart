@@ -127,9 +127,19 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: const Text('Mes Cartes', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        centerTitle: true,
+      ),
       body: Stack(
         children: [
-          // Background
           Container(
             decoration: const BoxDecoration(
               image: DecorationImage(
@@ -138,28 +148,44 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
               ),
             ),
           ),
-
           SafeArea(
             child: Column(
               children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        const SizedBox(height: 40),
-                        _buildWelcomeSection(),
-                        const SizedBox(height: 40),
-                        _buildCategoriesSection(),
-                        const SizedBox(height: 30),
-                      ],
-                    ),
+                const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Catégories',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
+                      ),
+                      TextButton(
+                        onPressed: _showAllCategories,
+                        child: const Text('Voir plus', style: TextStyle(color: Colors.black54)),
+                      ),
+                    ],
                   ),
                 ),
-                // Bouton Continuer en bas
-                if (_selectedCategories.isNotEmpty)
-                  _buildContinueButton(),
+                Expanded(
+                  child: _isLoading
+                      ? const Center(child: CircularProgressIndicator(color: Colors.black))
+                      : GridView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 15,
+                            mainAxisSpacing: 15,
+                            childAspectRatio: 0.95,
+                          ),
+                          itemCount: _categories.length,
+                          itemBuilder: (context, index) {
+                            final category = _categories[index];
+                            return _buildCategoryCard(category);
+                          },
+                        ),
+                ),
               ],
             ),
           ),
@@ -169,81 +195,12 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
   }
 
   Widget _buildWelcomeSection() {
-    return const Column(
-      children: [
-        Text(
-          'Bienvenu(e) sur AFROCARDS !',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-        SizedBox(height: 15),
-        Text(
-          'Selectionnez votre centre d\'interet\npour commencer',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.black54,
-            height: 1.4,
-          ),
-        ),
-      ],
-    );
+    return const SizedBox.shrink();
   }
 
   Widget _buildCategoriesSection() {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Categories',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            TextButton(
-              onPressed: _showAllCategories,
-              child: const Text(
-                'Voir plus',
-                style: TextStyle(
-                  color: Colors.black54,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 15),
-        _isLoading
-            ? const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(40),
-                  child: CircularProgressIndicator(color: Colors.black),
-                ),
-              )
-            : GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 15,
-                  mainAxisSpacing: 15,
-                  childAspectRatio: 0.95,
-                ),
-                itemCount: _categories.length > 6 ? 6 : _categories.length,
-                itemBuilder: (context, index) {
-                  final category = _categories[index];
-                  return _buildCategoryCard(category);
-                },
-              ),
-      ],
-    );
+    // Plus utilisé, la grille est directement dans le build principal
+    return const SizedBox.shrink();
   }
 
   Widget _buildCategoryCard(dynamic category) {
