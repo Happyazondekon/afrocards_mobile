@@ -4,6 +4,8 @@ import 'dart:convert';
 
 import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/services/session_service.dart';
+import '../../../../shared/widgets/app_header.dart';
+import '../../../../shared/widgets/bottom_nav_bar.dart';
 import '../../../quiz/presentation/screens/game_screen.dart';
 import 'home_screen.dart';
 
@@ -127,17 +129,6 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: const Text('Mes Cartes', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-        centerTitle: true,
-      ),
       body: Stack(
         children: [
           Container(
@@ -151,7 +142,10 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
           SafeArea(
             child: Column(
               children: [
-                const SizedBox(height: 20),
+                AppHeader(
+                  title: 'Mes Cartes',
+                  onBackTap: () => Navigator.of(context).pop(),
+                ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   child: Row(
@@ -190,6 +184,12 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
             ),
           ),
         ],
+      ),
+      bottomNavigationBar: AppBottomNavBar(
+        currentIndex: 1,
+        onTap: (index) {
+          if (index != 1) Navigator.of(context).pop();
+        },
       ),
     );
   }
