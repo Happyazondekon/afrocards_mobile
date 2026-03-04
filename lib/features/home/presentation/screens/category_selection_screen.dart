@@ -142,10 +142,6 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
           SafeArea(
             child: Column(
               children: [
-                AppHeader(
-                  title: 'Mes Cartes',
-                  onBackTap: () => Navigator.of(context).pop(),
-                ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   child: Row(
